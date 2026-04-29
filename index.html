@@ -24,14 +24,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- EmailJS SDK -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script type="text/javascript">
-        (function() {
-            // Llave pública proporcionada por el usuario
-            emailjs.init("6Bnq58ulPIFad4xma");
-        })();
-    </script>
+    
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Animation Libraries -->
@@ -503,9 +496,9 @@
                 
                 <div class="direct-contact">
                     <p class="direct-label">Contacto directo:</p>
-                    <a href="mailto:Integracloud.cl@gmail.com" class="direct-email highlight-email">
+                    <a href="mailto:contacto@integracloud.cl" class="direct-email highlight-email">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                        Integracloud.cl@gmail.com
+                        contacto@integracloud.cl
                     </a>
                 </div>
             </div>
@@ -614,11 +607,24 @@
             }
         }
 
+        // Clean URL: Remove fragment (#) from URL bar
+        function cleanURL() {
+            if (window.location.hash) {
+                history.pushState(null, null, window.location.pathname);
+            }
+        }
+
         // Force scroll to top on refresh
         if ('scrollRestoration' in history) {
             history.scrollRestoration = 'manual';
         }
-        window.scrollTo(0, 0);
+        
+        window.addEventListener('beforeunload', function() {
+            window.scrollTo(0, 0);
+        });
+        window.addEventListener('load', function() {
+            window.scrollTo(0, 0);
+        });
         cleanURL();
 
         // Smooth Scroll & Clean Hash on Click
@@ -661,81 +667,113 @@
         });
 
         // Supabase Client Initialization
-        const supabaseUrl = 'https://yraroqntugnsanvwxrqn.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyYXJvcW50dWduc2Fudnd4cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3Mjk1NTUsImV4cCI6MjA5MjMwNTU1NX0.PHMZTOkgcByv6BfbVnLBzsyyYmmL-eoOpxpR6Zf4Ip4';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        let supabaseClient = null;
+        try {
+            const supabaseUrl = 'https://yraroqntugnsanvwxrqn.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyYXJvcW50dWduc2Fudnd4cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3Mjk1NTUsImV4cCI6MjA5MjMwNTU1NX0.PHMZTOkgcByv6BfbVnLBzsyyYmmL-eoOpxpR6Zf4Ip4';
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+            }
+        } catch(e) {
+            console.error("Supabase init error:", e);
+        }
 
-        // Form Submit with EmailJS
+        // Form Submit to Backend API
         const contactForm = document.getElementById('integraForm');
         const successMsg = document.getElementById('successMessage');
         const submitBtn = document.querySelector('.form-submit');
 
-        if (contactForm && successMsg) {
+        if (contactForm && successMsg && submitBtn) {
             contactForm.addEventListener('submit', function(event) {
+                // Detener el comportamiento de recarga nativo instantáneamente
                 event.preventDefault();
                 
-                // --- BOT PROTECTION (Honeypot) ---
-                const honeypot = document.getElementById('website_url').value;
-                if (honeypot) {
-                    // Si el campo oculto está lleno, es un bot. Retornamos sin enviar nada pero simulamos éxito
-                    console.warn("Bot detectado por honeypot. Envío abortado silenciosamente.");
-                    return;
-                }
-                
-                // Cambiar estado del botón
-                const originalBtnText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Enviando...';
+                // Ejecutar la lógica asíncrona
+                (async () => {
+                    // --- BOT PROTECTION (Honeypot) ---
+                    const honeypot = document.getElementById('website_url');
+                    if (honeypot && honeypot.value) {
+                        console.warn("Bot detectado por honeypot. Envío abortado silenciosamente.");
+                        return;
+                    }
+                    
+                    // Cambiar estado del botón
+                    const originalBtnText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Enviando...';
 
-                // Estos IDs reales proporcionados por el usuario
-                const serviceID = 'service_rje68ul';
-                const templateID = 'template_wxwv7ht';
+                    // Generar la fecha y hora actual
+                    const now = new Date();
+                    const formattedTime = now.toLocaleString('es-CL', { 
+                        timeZone: 'America/Santiago',
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    const timeInput = document.getElementById('formTime');
+                    if (timeInput) timeInput.value = formattedTime;
 
-                // Generar la fecha y hora actual para el campo {{time}}
-                const now = new Date();
-                const formattedTime = now.toLocaleString('es-CL', { 
-                    timeZone: 'America/Santiago',
-                    day: '2-digit', 
-                    month: '2-digit', 
-                    year: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                document.getElementById('formTime').value = formattedTime;
+                    const formData = new FormData(contactForm);
+                    const data = Object.fromEntries(formData.entries());
 
-                // Guardar en Supabase (en paralelo, sin bloquear el envío del correo)
-                const formData = new FormData(contactForm);
-                supabase.from('leads').insert([{
-                    name: formData.get('name'),
-                    email: formData.get('email'),
-                    company: formData.get('company') || null,
-                    service: formData.get('service'),
-                    message: formData.get('message'),
-                    source: formData.get('source'),
-                    time: formattedTime
-                }]).then(({ error }) => {
-                    if (error) console.error("Error guardando lead en Supabase:", error);
-                });
+                    // Guardar en Supabase (en paralelo)
+                    if (supabaseClient) {
+                        supabaseClient.from('leads').insert([{
+                            name: data.name,
+                            email: data.email,
+                            company: data.company || null,
+                            service: data.service,
+                            message: data.message,
+                            source: data.source,
+                            time: formattedTime
+                        }]).then(({ error }) => {
+                            if (error) console.error("Error guardando lead en Supabase:", error);
+                        }).catch(e => console.error("Supabase exception:", e));
+                    }
 
-                emailjs.sendForm(serviceID, templateID, this)
-                    .then(() => {
-                        contactForm.style.display = 'none';
-                        successMsg.style.display = 'flex';
-                        successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        
-                        // Disparar confeti de celebración desde la derecha (donde está el mensaje)
-                        confetti({
-                            particleCount: 150,
-                            spread: 70,
-                            origin: { x: 0.8, y: 0.5 },
-                            colors: ['#007cf0', '#00dfd8', '#10b981', '#ffffff']
+                    try {
+                        const response = await fetch('/api/send-email', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
                         });
-                    }, (err) => {
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.error || 'Error en la respuesta del servidor');
+                        }
+
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            contactForm.style.display = 'none';
+                            successMsg.style.display = 'flex';
+                            successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Disparar confeti de celebración si está disponible
+                            if (typeof confetti === 'function') {
+                                confetti({
+                                    particleCount: 150,
+                                    spread: 70,
+                                    origin: { x: 0.8, y: 0.5 },
+                                    colors: ['#007cf0', '#00dfd8', '#10b981', '#ffffff']
+                                });
+                            }
+                        } else {
+                            throw new Error(result.error || 'Error desconocido');
+                        }
+                    } catch (err) {
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalBtnText;
-                        alert("Hubo un error al enviar el mensaje. Por favor, intenta nuevamente o contáctanos por email directo.");
-                        console.error('EmailJS Error:', err);
-                    });
+                        alert("Hubo un error al enviar el mensaje: " + err.message + ". Por favor, intenta nuevamente.");
+                        console.error('Fetch Error:', err);
+                    }
+                })();
             });
         }
 

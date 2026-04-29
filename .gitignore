@@ -1,0 +1,18 @@
+# Variables de entorno - NUNCA subir al repositorio
+.env
+
+# Dependencias de Node.js
+node_modules/
+
+# Archivos de prueba temporales
+test-smtp.js
+test-puppeteer.js
+script_test.js
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
