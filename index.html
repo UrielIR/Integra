@@ -15,8 +15,9 @@
     <meta property="og:image" content="https://integracloud.cl/assets/img/logo.png">
 
     <!-- Favicon (Miniatura de pestaña) -->
-    <link rel="icon" type="image/png" href="assets/img/logo.png?v=3">
-    <link rel="shortcut icon" href="assets/img/logo.png?v=3">
+    <link rel="icon" type="image/png" href="assets/favicon/favicon-optimized.png">
+    <link rel="icon" href="assets/favicon/favicon.ico">
+    <link rel="shortcut icon" href="assets/favicon/favicon.ico">
     <link rel="stylesheet" href="assets/css/styles.css">
     
     <!-- Google Fonts -->
@@ -41,6 +42,11 @@
             <img src="assets/img/logo.png" alt="Integra Cloud" class="logo-icon">
             <span class="logo-text">Integra<span class="highlight">Cloud</span></span>
         </a>
+        <button class="nav-toggle" aria-label="Abrir menú" aria-expanded="false" type="button">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>
             <a href="#inicio">Inicio</a>
             <a href="#problemas">El Problema</a>
@@ -595,7 +601,7 @@
                 <img src="assets/img/logo.png" alt="Integra Cloud" class="logo-icon">
                 <span class="logo-text">Integra Cloud</span>
             </a>
-            <p>&copy; 2026 Integra Cloud | Desarrollado por <strong>Integra Cloud</strong></p>
+            <p>&copy; 2026 Integra Cloud | Desarrollado por <a href="https://www.integracloud.cl/" target="_blank" rel="noopener noreferrer"><strong>Integra Cloud</strong></a></p>
         </div>
     </footer>
 
@@ -620,12 +626,13 @@
         }
         
         window.addEventListener('beforeunload', function() {
-            window.scrollTo(0, 0);
+            // No forzar scroll al salir (evita saltos de posición en dispositivos móviles).
         });
         window.addEventListener('load', function() {
-            window.scrollTo(0, 0);
+            // No forzar scroll al cargar (evita volver al inicio tras interacciones).
         });
         cleanURL();
+
 
         // Smooth Scroll & Clean Hash on Click
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -656,15 +663,59 @@
             });
         });
 
-        // Sticky Header Effect
+        // Sticky Header Effect + mantener nav-toggle visible en scroll
         window.addEventListener('scroll', () => {
             const header = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
+            const navToggleBtn = document.querySelector('.nav-toggle');
+            const scrolled = window.scrollY > 20;
+            if (header) {
+                header.classList.toggle('scrolled', scrolled);
+            }
+            if (navToggleBtn) {
+                // Añade clase para controlar opacidad y estilo durante scroll
+                navToggleBtn.classList.toggle('scrolled', scrolled);
+                // Si por alguna razón estaba oculto, aseguramos que se muestre (mobile fixed)
+                navToggleBtn.style.display = 'inline-flex';
             }
         });
+
+        // Responsive menu toggle
+        const navToggle = document.querySelector('.nav-toggle');
+        const header = document.querySelector('.navbar');
+        const navLinks = document.querySelectorAll('.navbar nav a');
+
+        if (navToggle && header) {
+            // Mover el botón fuera del header hacia el body para evitar que ancestros con transform
+            // creen un nuevo contexto que afecte el comportamiento de `position: fixed`.
+            if (navToggle.parentElement !== document.body) {
+                document.body.appendChild(navToggle);
+            }
+
+            const toggleMenu = () => {
+                const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+                const next = String(!expanded);
+                navToggle.setAttribute('aria-expanded', next);
+                header.classList.toggle('nav-open');
+                // Sincronizar estado visual del botón al estar fuera del header
+                const opened = header.classList.contains('nav-open');
+                navToggle.classList.toggle('open', opened);
+                // No mover el viewport al abrir el menú (evita que el scroll vuelva al inicio).
+
+            };
+
+            // Reasignar listener de clic (evita duplicados)
+            navToggle.removeEventListener('click', toggleMenu);
+            navToggle.addEventListener('click', toggleMenu);
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    header.classList.remove('nav-open');
+                    navToggle.setAttribute('aria-expanded', 'false');
+                });
+            });
+        }
+
+            // (No dynamic hero resizing)
 
         // Supabase Client Initialization
         let supabaseClient = null;
